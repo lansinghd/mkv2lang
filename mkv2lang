@@ -1,0 +1,25 @@
+#!/bin/bash
+
+targetLanguage="eng"
+
+if [ "$1" = "" ]; then
+  inputFile="."
+else
+  inputFile="$1"
+fi
+
+find "$inputFile" -type f -name '*.mkv' | while read targetFile
+do
+    fileName=$(basename "$targetFile")
+    checkLanguage=$(mkvmerge --identify-verbose "$targetFile" | grep audio | grep language:und)
+    if [ -z "$checkLanguage" ]; then
+        echo "Language is already defined, skipping $fileName"
+    else
+        echo "Language undefined, setting to $targetLanguage: $fileName"
+        mkvpropedit "$targetFile" --quiet --edit track:a1 --set language=$targetLanguage
+        verifyLanguage=$(mkvmerge --identify-verbose "$targetFile" | grep audio | grep language:$targetLanguage)
+        if [ -z "$verifyLanguage" ]; then
+            echo "Error - failed to set language for $fileName"
+        fi
+    fi
+done
